@@ -801,6 +801,14 @@
     }
 
 
+    /* The diploma is a document: always show it whole. */
+    .award .full-image img {
+      min-height: 0;
+
+      display: block;
+    }
+
+
     /* =========================================================
        RESULTS
     ========================================================== */
@@ -1349,6 +1357,10 @@
         Results
       </a>
 
+      <a href="#award">
+        Award
+      </a>
+
     </div>
 
   </nav>
@@ -1835,6 +1847,79 @@
     </section>
 
 
+    <!-- ====================================================
+         AWARD
+    ==================================================== -->
+
+    <section
+      class="case-section award"
+      id="award"
+    >
+
+      <div class="container">
+
+
+        <div class="case-header">
+
+          <h2 class="case-title">
+            Recognition
+          </h2>
+
+        </div>
+
+
+        <div class="text-grid">
+
+
+          <div>
+
+            <p class="text-large">
+
+              Best project
+
+              <span>
+                at the ITMO Congress of Young Scientists.
+              </span>
+
+            </p>
+
+          </div>
+
+
+          <div class="text-body">
+
+            <p>
+
+              QuickFront was presented at the
+              XIV ITMO Congress of Young Scientists
+              in Saint Petersburg, April 7–11, 2025,
+              and won the nomination
+              “Best project by a young scientist”.
+
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="full-image">
+
+          <img
+            decoding="async"
+            loading="lazy"
+            src="../assets/QuickFront_diploma.webp"
+            alt="Diploma of the XIV ITMO Congress of Young Scientists: winner of the Best project by a young scientist nomination, awarded to Ekaterina Zubareva"
+          >
+
+        </div>
+
+
+      </div>
+
+    </section>
+
+
   </main>
 
 
@@ -1973,7 +2058,9 @@
 
       document.querySelector("#process"),
 
-      document.querySelector("#result")
+      document.querySelector("#result"),
+
+      document.querySelector("#award")
 
     ].filter(Boolean);
 
