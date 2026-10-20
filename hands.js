@@ -69,28 +69,43 @@
 
     const mobile = width < 700;
 
-    // Fingertips stop beside the content, the arms run off
-    // the screen edges.
-    const gapHalf = width * (mobile ? .2 : .17);
     const tipLeft = data.left.x + data.left.cols * data.step;
-    const scale = Math.min(1.15, (width / 2 - gapHalf) / tipLeft);
 
-    // Vertically centred on where the resume button sits in the
-    // layout. offsetTop ignores CSS transforms, so lifting the
-    // hero content does not move the hands.
-    const button = hero.querySelector(".resume-button");
+    // Desktop: fingertips stop beside the content, the arms run
+    // off the screen edges. Phone: there is no room beside the
+    // content, so the hands sit under it, larger, fingertips
+    // almost meeting in the middle and the arms cut off by the
+    // screen edges.
+    const gapHalf = mobile ? width * .03 : width * .17;
+    const scale = mobile
+      ? width * .0011
+      : Math.min(1.15, (width / 2 - gapHalf) / tipLeft);
 
-    let top = null;
-
-    if (button) {
-      top = button.offsetHeight / 2;
-      for (let el = button; el && el !== hero; el = el.offsetParent) {
-        top += el.offsetTop;
+    // Layout position of an element inside the hero. offsetTop
+    // ignores CSS transforms, so lifting the hero content does
+    // not move the hands.
+    const layoutTop = el => {
+      let top = 0;
+      for (let node = el; node && node !== hero; node = node.offsetParent) {
+        top += node.offsetTop;
       }
-    }
+      return top;
+    };
 
     centerX = width / 2;
-    centerY = top !== null ? top : height * .6;
+
+    const button = hero.querySelector(".resume-button");
+    const content = hero.querySelector(".hero-content");
+
+    if (mobile && content) {
+      // Just under the hero content, with room for the arms.
+      centerY = layoutTop(content) + content.offsetHeight + 90 * (width / 375);
+    } else if (button) {
+      // Vertically centred on the resume button.
+      centerY = layoutTop(button) + button.offsetHeight / 2;
+    } else {
+      centerY = height * .6;
+    }
 
     // Source centre between the two hands.
     const srcMidY = 410;
