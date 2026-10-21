@@ -3154,15 +3154,25 @@
         const width =
           deck.clientWidth;
 
-        const mobile =
-          width < 700;
-
+        // Bigger cards on smaller screens, where the side cards
+        // only need a sliver to read as a stack.
         const cardW =
-          mobile ? width * .64 : Math.min(560, width * .5);
+          width < 700 ? width * .82 :
+          width < 1100 ? width * .62 :
+          Math.min(600, width * .52);
 
         // The front card is always centred.
         const frontX =
           (width - cardW) / 2;
+
+        // Scale the peeks so the outermost card ends at the edge
+        // of the content column instead of running into the page
+        // margins.
+        const far =
+          Math.min(cards.length - 1, PEEK.length - 1);
+
+        const fit =
+          Math.min(1, frontX * .96 / (cardW * PEEK[far]));
 
         deck.style.setProperty("--card-w", `${cardW}px`);
         deck.style.setProperty("--deck-h", `${cardW * .8}px`);
@@ -3184,8 +3194,8 @@
             cardW * (1 - scale) / 2;
 
           const x =
-            d < 0 ? frontX - cardW * PEEK[k] - shrink :
-            d > 0 ? frontX + cardW * PEEK[k] + shrink :
+            d < 0 ? frontX - cardW * PEEK[k] * fit - shrink :
+            d > 0 ? frontX + cardW * PEEK[k] * fit + shrink :
             frontX;
 
           card.style.transform =
