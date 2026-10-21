@@ -12,12 +12,17 @@
    drawn as a halftone: dots grow with the shade, highlights stay
    empty, and the deepest shadows turn into $ and #.
 
-   Idle: every dot trembles on its own rhythm and glyphs
-   flicker now and then.
-   Hover: a lens follows the pointer — dots under it grow,
-   darken, turn into dense glyphs and bulge outwards — and the
-   closer the pointer gets to the gap between the fingers, the
-   further the hands reach towards each other.
+   Idle: both hands float slowly, a soft wave runs through them,
+   every dot trembles on its own rhythm and glyphs flicker now
+   and then.
+   Hover: the motion slowly grows stronger; a lens follows the
+   pointer — dots under it grow, darken, turn into dense glyphs
+   and bulge outwards — and the closer the pointer gets to the
+   gap between the fingers, the further the hands reach towards
+   each other.
+   Click / tap: the dots around the pointer blow apart in
+   rainbow colours, then drift back into the hands and fade to
+   grey.
 
    The loop runs at ~30 fps and pauses while the hero is off
    screen or the tab is hidden; with reduced motion the hands
@@ -42,6 +47,8 @@
   const LENS = 150;      // lens radius, px
   const BULGE = 16;      // how far dots are pushed out, px
   const REACH = 26;      // how far the hands move together, px
+  const SPRING = .012;   // pull back home after a burst
+  const DRAG = .9;       // velocity kept each frame
 
   let dots = [];
   let width = 0;
@@ -54,6 +61,7 @@
   let target = null;
   const lens = { x: 0, y: 0, s: 0 };
   let reach = 0;
+  let hover = 0;         // 0..1, eases in slowly while hovered
 
   function build() {
 
@@ -149,7 +157,11 @@
           flick: 0,
           p1: Math.random() * Math.PI * 2,
           p2: Math.random() * Math.PI * 2,
-          sp: .7 + Math.random() * .8
+          sp: .7 + Math.random() * .8,
+          ox: 0, oy: 0,    // burst offset
+          vx: 0, vy: 0,
+          c: 0,            // colour amount 0..1
+          hue: 0
         });
       }
     });
@@ -166,7 +178,13 @@
     ctx.clearRect(0, 0, width, height);
 
     const base = Math.max(6, spacing * 1.5);
-    const tremble = calm ? 0 : Math.max(.35, spacing * .09);
+    const tremble = calm ? 0 : Math.max(.35, spacing * .09) * (1 + hover);
+
+    // Slow float of each hand and the wave running through it;
+    // both grow while the pointer is over the hero.
+    const floatY = calm ? 0 : 3 + hover * 8;
+    const floatX = calm ? 0 : 2 + hover * 5;
+    const wave = calm ? 0 : 1 + hover * 4;
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -175,9 +193,18 @@
 
     for (const d of dots) {
 
-      // Idle tremble.
-      let x = d.hx + Math.sin(time * 2.1 * d.sp + d.p1) * tremble;
-      let y = d.hy + Math.cos(time * 1.7 * d.sp + d.p2) * tremble;
+      // Idle tremble, float and wave, plus any burst offset.
+      const side = d.dir < 0 ? 0 : 1.9;
+
+      let x = d.hx + d.ox
+        + Math.sin(time * 2.1 * d.sp + d.p1) * tremble
+        + Math.cos(time * .45 + side) * floatX
+        + Math.cos(time * .9 + d.hy * .02) * wave * hover * .6;
+
+      let y = d.hy + d.oy
+        + Math.cos(time * 1.7 * d.sp + d.p2) * tremble
+        + Math.sin(time * .55 + side) * floatY
+        + Math.sin(time * 1.1 + d.hx * .018) * wave;
 
       // Hands reach towards each other.
       x -= d.dir * reach * REACH;
@@ -217,7 +244,11 @@
 
       const alpha = Math.min(.92, .25 + tone * .075);
 
-      ctx.fillStyle = `rgba(95, 95, 100, ${alpha})`;
+      // Grey normally; after a burst the dot glows in its own
+      // colour and slowly fades back to grey.
+      ctx.fillStyle = d.c > .02
+        ? `hsla(${d.hue}, ${4 + 84 * d.c}%, ${38 + 16 * d.c}%, ${Math.min(.95, alpha + .2 * d.c)})`
+        : `rgba(95, 95, 100, ${alpha})`;
 
       if (tone >= 8.5) {
 
@@ -282,6 +313,30 @@
 
     reach += (want - reach) * .08;
 
+    // Hover motion builds up and dies down slowly.
+    hover += ((target ? 1 : 0) - hover) * .025;
+
+    // Burst physics: velocity with drag and a soft spring home.
+    for (const d of dots) {
+
+      if (d.vx || d.vy || d.ox || d.oy) {
+
+        d.vx = (d.vx - d.ox * SPRING) * DRAG;
+        d.vy = (d.vy - d.oy * SPRING) * DRAG;
+
+        d.ox += d.vx;
+        d.oy += d.vy;
+
+        if (Math.abs(d.ox) + Math.abs(d.oy) + Math.abs(d.vx) + Math.abs(d.vy) < .05) {
+          d.ox = d.oy = d.vx = d.vy = 0;
+        }
+      }
+
+      if (d.c) {
+        d.c = d.c > .01 ? d.c * .975 : 0;
+      }
+    }
+
     // Random glyph flicker on a few dots each frame.
     for (let i = 0; i < 6; i++) {
       const d = dots[(Math.random() * dots.length) | 0];
@@ -334,6 +389,43 @@
 
   hero.addEventListener("pointerleave", () => {
     target = null;
+  });
+
+  // Click / tap: blow the nearby dots apart in colour. Clicks on
+  // links and buttons are left alone.
+  hero.addEventListener("pointerdown", event => {
+
+    if (calm || event.target.closest("a, button, input, textarea")) {
+      return;
+    }
+
+    const box = hero.getBoundingClientRect();
+    const px = event.clientX - box.left;
+    const py = event.clientY - box.top;
+
+    const radius = Math.max(220, width * .35);
+    const hueShift = Math.random() * 360;
+
+    for (const d of dots) {
+
+      const dx = d.hx + d.ox - px;
+      const dy = d.hy + d.oy - py;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > radius) {
+        continue;
+      }
+
+      const k = (1 - dist / radius) ** 1.2;
+      const angle = Math.atan2(dy, dx) + (Math.random() - .5) * .9;
+      const speed = (6 + 16 * k) * (.6 + Math.random() * .8);
+
+      d.vx += Math.cos(angle) * speed;
+      d.vy += Math.sin(angle) * speed;
+
+      d.c = Math.max(d.c, .45 + .55 * k);
+      d.hue = (angle * 180 / Math.PI + 360 + hueShift) % 360;
+    }
   });
 
   // ---- setup ----
