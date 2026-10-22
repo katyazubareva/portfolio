@@ -178,13 +178,13 @@
     ctx.clearRect(0, 0, width, height);
 
     const base = Math.max(6, spacing * 1.5);
-    const tremble = calm ? 0 : Math.max(.35, spacing * .09) * (1 + hover);
+    const tremble = calm ? 0 : Math.max(.35, spacing * .09) * (1 + hover * .5);
 
     // Slow float of each hand and the wave running through it;
     // both grow while the pointer is over the hero.
-    const floatY = calm ? 0 : 3 + hover * 8;
-    const floatX = calm ? 0 : 2 + hover * 5;
-    const wave = calm ? 0 : 1 + hover * 4;
+    const floatY = calm ? 0 : 1.5 + hover * 2.5;
+    const floatX = calm ? 0 : 1 + hover * 1.5;
+    const wave = calm ? 0 : .4 + hover * 1.2;
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
