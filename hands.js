@@ -49,6 +49,7 @@
   const REACH = 26;      // how far the hands move together, px
   const SPRING = .012;   // pull back home after a burst
   const DRAG = .9;       // velocity kept each frame
+  const OVERRUN = 40;    // how far the arms run past the screen edges, px
 
   let dots = [];
   let width = 0;
@@ -85,9 +86,12 @@
     // almost meeting in the middle and the arms cut off by the
     // screen edges.
     const gapHalf = mobile ? width * .03 : width * .17;
+    // The arms are cut off by the edges of the source images, so
+    // on desktop they are sized to run OVERRUN px past the screen
+    // edges: no gap appears while the hands float and reach in.
     const scale = mobile
       ? width * .0011
-      : Math.min(1.15, (width / 2 - gapHalf) / tipLeft);
+      : Math.min(1.25, (width / 2 - gapHalf + OVERRUN) / tipLeft);
 
     // Layout position of an element inside the hero. offsetTop
     // ignores CSS transforms, so lifting the hero content does
